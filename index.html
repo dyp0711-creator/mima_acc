@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>미마 액세서리 쿠폰 CRM</title>
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#f5f5f7; --card:#ffffff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --line:#e8e8ed; --track:#eeeef2;
+    --accent:#0071e3; --accent-soft:#cfe4fb; --pos:#00875a; --warn:#b95000;
+    --shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --bg:#000000; --card:#1c1c1e; --ink:#f5f5f7; --ink2:#98989d; --ink3:#6e6e73;
+      --line:#2c2c2e; --track:#2c2c2e;
+      --accent:#0a84ff; --accent-soft:#173a5e; --pos:#30d158; --warn:#ff9f0a;
+      --shadow:none;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Apple SD Gothic Neo",
+      "Pretendard","Malgun Gothic",Segoe UI,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:44px 22px 96px}
+
+  /* ── 헤더 */
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
+    flex-wrap:wrap;margin-bottom:32px}
+  h1{font-size:30px;line-height:1.15;margin:0;letter-spacing:-.024em;font-weight:700}
+  .stamp{color:var(--ink3);font-size:13px;margin-top:7px;letter-spacing:-.01em}
+  .btn{font:inherit;font-size:14px;font-weight:500;border:0;border-radius:980px;
+    padding:9px 19px;cursor:pointer;background:var(--accent);color:#fff;
+    transition:opacity .15s}
+  .btn:hover{opacity:.85}
+  .btn:disabled{opacity:.4;cursor:default}
+
+  /* ── 히어로 지표 */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+  .kpi{background:var(--card);border-radius:18px;padding:20px 22px 18px;box-shadow:var(--shadow);
+    min-width:0}
+  .kpi .k{font-size:12.5px;color:var(--ink2);letter-spacing:-.01em}
+  .kpi .v{font-size:29px;line-height:1.15;font-weight:700;letter-spacing:-.03em;
+    margin:8px 0 0;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .kpi .v .u{font-size:15px;font-weight:600;color:var(--ink2);margin-left:2px;letter-spacing:-.01em}
+  .kpi .s{font-size:11.5px;color:var(--ink3);margin-top:7px;letter-spacing:-.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kpi.hero .v{color:var(--accent)}
+
+  /* ── 카드 */
+  .card[hidden]{display:none}
+  .card{background:var(--card);border-radius:18px;padding:26px 26px 24px;
+    box-shadow:var(--shadow);margin-bottom:14px}
+  .card > h2{font-size:17px;font-weight:600;letter-spacing:-.015em;margin:0 0 3px}
+  .card > .sub{font-size:13px;color:var(--ink3);margin:0 0 22px;letter-spacing:-.01em}
+  .card > .sub:last-of-type{margin-bottom:20px}
+
+  /* ── 퍼널 */
+  .funnel{display:grid;gap:4px}
+  .fstep{display:grid;grid-template-columns:104px 1fr 74px 66px;align-items:center;gap:16px}
+  .fstep.fhead{padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:6px}
+  .fstep.fhead span{font-size:11.5px;color:var(--ink3);font-weight:500;letter-spacing:.01em}
+  .fstep.fhead .fn,.fstep.fhead .fp{text-align:right}
+  .fstep .fl{font-size:13.5px;color:var(--ink2);letter-spacing:-.01em}
+  .fstep .fl small{display:block;font-size:11px;color:var(--ink3);margin-top:1px;
+    font-variant-numeric:tabular-nums}
+  .ftrack{height:30px;border-radius:8px;background:var(--track);overflow:hidden}
+  .ftrack > i{display:block;height:100%;border-radius:8px;background:var(--accent);
+    min-width:3px;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+  .ftrack.soft > i{background:var(--accent-soft)}
+  .fn{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em;text-align:right}
+  .fp{font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums;
+    text-align:right;letter-spacing:-.01em}
+  .fp.zero{color:var(--ink3)}
+
+  /* ── 막대 표 */
+  .rows{display:grid;gap:2px}
+  .row{display:grid;grid-template-columns:minmax(120px,1.05fr) minmax(96px,.85fr)
+       minmax(120px,1.1fr) minmax(88px,.62fr) 62px;
+    align-items:center;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row.head{padding:0 0 9px;border-bottom:1px solid var(--line)}
+  .row.head span{font-size:11.5px;color:var(--ink3);font-weight:500;letter-spacing:.01em}
+  .nm{font-size:14.5px;font-weight:600;letter-spacing:-.015em}
+  .nm small{display:block;font-size:11.5px;color:var(--ink3);font-weight:400;margin-top:2px}
+  .mini{display:flex;align-items:center;gap:9px}
+  .mtrack{flex:1;height:7px;border-radius:4px;background:var(--track);overflow:hidden;min-width:34px}
+  .mtrack > i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+  .mtrack.gray > i{background:var(--ink3)}
+  .mv{font-size:13.5px;font-variant-numeric:tabular-nums;min-width:52px;text-align:right;
+    letter-spacing:-.01em}
+  .mv.dim{color:var(--ink3)}
+  .money{font-size:14px;font-variant-numeric:tabular-nums;text-align:right;letter-spacing:-.015em}
+  .money small{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px}
+  .roas{font-size:14.5px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;
+    letter-spacing:-.015em;color:var(--pos)}
+  .roas.none{color:var(--ink3);font-weight:400}
+
+  /* ── 회차 선택 */
+  .hctl{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  .sel{font:inherit;font-size:14px;font-weight:500;color:var(--ink);background:var(--card);
+    border:1px solid var(--line);border-radius:980px;padding:8px 34px 8px 16px;cursor:pointer;
+    appearance:none;-webkit-appearance:none;letter-spacing:-.01em;
+    background-image:linear-gradient(45deg,transparent 50%,var(--ink2) 50%),
+      linear-gradient(135deg,var(--ink2) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size:5px 5px, 5px 5px;background-repeat:no-repeat}
+  .sel:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .row.rsel{background:var(--accent-soft);border-radius:10px;
+    box-shadow:0 0 0 8px var(--accent-soft)}
+
+  .pill{display:inline-block;padding:2px 9px;border-radius:980px;font-size:11.5px;
+    background:var(--track);color:var(--warn);font-weight:500;margin-left:6px}
+  .empty{color:var(--ink3);padding:34px 0;text-align:center;font-size:14px}
+  .err{background:var(--card);border-radius:18px;padding:22px 26px;box-shadow:var(--shadow);
+    color:var(--warn);font-size:14px;margin-bottom:14px}
+  .foot{color:var(--ink3);font-size:12px;text-align:center;margin-top:34px;letter-spacing:-.01em}
+
+  @media (max-width:900px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:720px){
+    .fstep{grid-template-columns:92px 1fr 58px 52px;gap:9px}
+    .wrap{padding:28px 16px 72px}
+    h1{font-size:24px}
+    .kpi .v{font-size:31px}
+    .card{padding:20px 18px}
+    .row{grid-template-columns:1fr 1fr;gap:10px 14px;padding:15px 0}
+    .row.head{display:none}
+    .money,.roas{text-align:left}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>미마 액세서리 쿠폰 CRM</h1>
+      <div class="stamp" id="stamp">불러오는 중…</div>
+    </div>
+    <div class="hctl">
+      <select id="round" class="sel" aria-label="회차 선택"></select>
+      <button class="btn" id="reload">새로고침</button>
+    </div>
+  </header>
+
+  <div id="err" class="err" hidden></div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <h2>전환 퍼널</h2>
+    <p class="sub" id="funnelsub"></p>
+    <div class="funnel" id="funnel"></div>
+  </div>
+
+  <div class="card">
+    <h2>모델별 성과</h2>
+    <p class="sub" data-scope="어느 유모차 라인이 쿠폰에 반응했는지"></p>
+    <div class="rows" id="models"></div>
+  </div>
+
+  <div class="card">
+    <h2>쿠폰으로 팔린 액세서리</h2>
+    <p class="sub" data-scope="쿠폰 발급내역의 상품명 기준"></p>
+    <div class="rows" id="items"></div>
+  </div>
+
+  <div class="card" id="roundcard">
+    <h2>회차별 추이</h2>
+    <p class="sub">전체 회차 비교 (위 드롭다운과 무관하게 항상 전체를 보여줍니다)</p>
+    <div class="rows" id="rounds"></div>
+  </div>
+
+  <p class="foot">구글시트를 실시간으로 읽습니다</p>
+</div>
+
+<script>
+var API = 'https://script.google.com/macros/s/AKfycby_47yqyOhttA6vvQ2R74rFbA0mS1FixqMoZrwbzP_E71MPMTnYoTMz47-CQ_a-kDtt/exec';
+
+var DATA = null, PICK = '';
+
+// 화면에 보여줄 모델 이름 (여기만 고치면 됩니다. 같은 이름이 되면 한 줄로 합쳐집니다)
+var MODEL_LABEL = { '미로': '미로 플러스' };
+function mlabel(k){ return MODEL_LABEL[k] || k; }
+function md(d){ return String(d||'').replace(/^\d{4}[-.\/]/, '').replace(/[-.\/]/g, '/'); }
+function dates(r){
+  var a = r.date ? '발급 ' + md(r.date) : '';
+  var b = r.crmDate && r.crmDate !== r.date ? ' · 발송 ' + md(r.crmDate) : '';
+  return a + b;
+}
+
+function n(v){ return (v||0).toLocaleString('ko-KR'); }
+function pct(a,b){ return b ? (Math.round(a/b*1000)/10) + '%' : '–'; }
+function won(v){ return v ? n(Math.round(v)) + '원' : '–'; }
+function roasTxt(rev, cost){ return (rev && cost) ? n(Math.round(rev/cost*100)) + '%' : '–'; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function cnt(v){ return (v && typeof v === 'object') ? (v.sent||0) : (v||0); }
+function w(a,b){ return (b ? Math.max(a/b*100, a>0?1.5:0) : 0) + '%'; }
+
+// ── 데이터 로드 (fetch 실패 시 JSONP)
+var seq = 0, TIMEOUT = 70000;
+function fetchStats(cb, onErr){
+  if (API.indexOf('http') !== 0){ onErr('API 주소가 설정되지 않았습니다.'); return; }
+  var url = API + (API.indexOf('?') < 0 ? '?' : '&') + 'api=1&t=' + Date.now();
+  var ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var killer = setTimeout(function(){ if (ac) ac.abort(); }, TIMEOUT);
+  fetch(url, ac ? {mode:'cors',credentials:'omit',signal:ac.signal} : {mode:'cors',credentials:'omit'})
+    .then(function(r){ return r.text(); })
+    .then(function(t){ clearTimeout(killer); cb(JSON.parse(t)); })
+    .catch(function(){ clearTimeout(killer); jsonp(cb, onErr); });
+}
+function jsonp(cb, onErr){
+  var name = '__mimaCb' + (++seq), s = document.createElement('script'), done = false;
+  var timer = setTimeout(function(){ if (done) return; done = true; cleanup();
+    onErr('응답이 없습니다. Apps Script 배포 권한을 확인해주세요.'); }, TIMEOUT);
+  function cleanup(){ clearTimeout(timer); try { delete window[name]; } catch(e){}
+    if (s.parentNode) s.parentNode.removeChild(s); }
+  window[name] = function(d){ if (done) return; done = true; cleanup(); cb(d); };
+  s.onerror = function(){ if (done) return; done = true; cleanup(); onErr('데이터를 불러오지 못했습니다.'); };
+  s.src = API + (API.indexOf('?') < 0 ? '?' : '&') + 'api=1&callback=' + name + '&t=' + Date.now();
+  document.body.appendChild(s);
+}
+
+// ── 선택된 회차(또는 전체)를 하나로 합친 값
+function slice(){
+  var rounds = (DATA.rounds || []).filter(function(r){ return !PICK || String(r.round) === PICK; });
+  var unit = DATA.unitCost || 10;
+  var agg = { sent:0, issued:0, used:0, converted:0, revenue:0, discount:0, masked:0, failed:0,
+              models:{}, items:{} };
+  rounds.forEach(function(r){
+    agg.sent += r.sent; agg.issued += r.issued; agg.used += r.used;
+    agg.converted += r.converted; agg.revenue += (r.revenue||0);
+    agg.discount += (r.discount||0); agg.masked += (r.masked||0); agg.failed += (r.failed||0);
+    var m = r.models || {};
+    Object.keys(m).filter(function(k){ return k; }).forEach(function(k){
+      var v = m[k], lk = mlabel(k);
+      if (!v || typeof v !== 'object') v = { sent:v||0, issued:0, used:0, revenue:0, discount:0, masked:0 };
+      var t = agg.models[lk] || (agg.models[lk] = { sent:0, issued:0, used:0, revenue:0, discount:0, masked:0 });
+      t.sent+=v.sent||0; t.issued+=v.issued||0; t.used+=v.used||0;
+      t.revenue+=v.revenue||0; t.discount+=v.discount||0; t.masked+=v.masked||0;
+    });
+    var it = r.items || {};
+    Object.keys(it).forEach(function(k){
+      var v = it[k];
+      var t = agg.items[k] || (agg.items[k] = { n:0, revenue:0, discount:0, models:{} });
+      t.n+=v.n||0; t.revenue+=v.revenue||0; t.discount+=v.discount||0;
+      Object.keys(v.models||{}).forEach(function(mk){
+        var lk = mlabel(mk); t.models[lk] = (t.models[lk]||0) + v.models[mk]; });
+    });
+  });
+  agg.crm = agg.sent * unit;
+  agg.cost = agg.crm + agg.discount;
+  agg.rounds = rounds;
+  return agg;
+}
+
+function render(D){
+  DATA = D;
+  if (D && D.error){ fail('서버 오류 — ' + D.error); return; }
+  document.getElementById('err').hidden = true;
+
+  document.getElementById('stamp').textContent =
+    '기준 ' + (D.generated || '') + '  ·  톡톡 발송 건당 ' + (D.unitCost || 10) + '원'
+    + (D.schema ? '  ·  ' + D.schema : '');
+
+  // 회차 드롭다운 (전체 화면에 적용되는 필터)
+  var rs = D.rounds || [];
+  var sel = document.getElementById('round');
+  if (PICK && !rs.some(function(r){ return String(r.round) === PICK; })) PICK = '';
+  sel.innerHTML = '<option value="">전체 회차 (' + rs.length + '개)</option>' +
+    rs.slice().reverse().map(function(r){
+      return '<option value="' + esc(r.round) + '">' + esc(r.round) + '회차 · ' +
+        esc(dates(r)) + '</option>';
+    }).join('');
+  sel.value = PICK;
+
+  draw();
+}
+
+function draw(){
+  var a = slice(), D = DATA;
+
+  // ── KPI
+  document.getElementById('kpis').innerHTML = [
+    kpi('쿠폰 매출', a.revenue ? n(a.revenue) : '–', a.revenue ? '원' : '',
+        '할인 ' + won(a.discount), true),
+    kpi('ROAS', roasTxt(a.revenue, a.cost), '', '비용 ' + won(a.cost)),
+    kpi('쿠폰 사용률', pct(a.used, a.issued), '', n(a.used) + ' / 발급 ' + n(a.issued)),
+    kpi('누적 발송', n(a.sent), '건', 'CRM ' + won(a.crm))
+  ].join('');
+
+  // ── 퍼널
+  var scope = PICK ? PICK + '회차' : '전체 회차';
+  var picked = PICK ? (DATA.rounds || []).filter(function(r){ return String(r.round) === PICK; })[0] : null;
+  document.getElementById('funnelsub').textContent =
+    scope + ' 기준' + (picked ? '  ·  ' + dates(picked).replace(/^발급 /, '쿠폰 발급 ')
+      .replace(' · 발송 ', '  ·  CRM 발송 ') : '');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-scope]'), function(el){
+    el.textContent = scope + ' · ' + el.getAttribute('data-scope');
+  });
+  // 쿠폰을 먼저 발급하면 발급자에게 톡톡이 나가고, 그 다음 사용으로 이어진다
+  var reached = Math.max(a.issued - a.failed, 0);   // 알림받기 해제 등으로 못 간 건 제외
+  var base = a.issued || 1;
+  var dIssue = '', dSend = '';
+  if (picked){ dIssue = md(picked.date); dSend = md(picked.crmDate || picked.date); }
+  else if ((DATA.rounds||[]).length === 1){
+    var r0 = DATA.rounds[0]; dIssue = md(r0.date); dSend = md(r0.crmDate || r0.date);
+  }
+  document.getElementById('funnel').innerHTML =
+    '<div class="fstep fhead"><span>단계</span><span></span>' +
+      '<span class="fn">건수</span><span class="fp">직전 대비</span></div>' +
+    fstep('쿠폰 발급', dIssue, a.issued, base, '–', true) +
+    fstep('발송', dSend, reached, base, pct(reached, a.issued), true) +
+    fstep('쿠폰 사용', '', a.used, base, pct(a.used, reached), false);
+
+  // ── 모델별
+  var mk = Object.keys(a.models).filter(function(k){ return k; })
+    .sort(function(x,y){ return a.models[y].sent - a.models[x].sent; });
+  var maxSent = mk.length ? a.models[mk[0]].sent : 0;
+  var maxUse = 0;
+  mk.forEach(function(k){ var m=a.models[k]; var u=m.issued?m.used/m.issued:0; if(u>maxUse) maxUse=u; });
+  var unit = D.unitCost || 10;
+
+  document.getElementById('models').innerHTML = mk.length
+    ? headRow('모델','발급 규모','쿠폰 사용률' + (maxUse ? ' (최고 ' + (Math.round(maxUse*1000)/10) + '% 기준)' : ''),
+              '쿠폰 매출','ROAS') + mk.map(function(k){
+        var m = a.models[k], c = m.sent*unit + m.discount;
+        var u = m.issued ? m.used/m.issued : 0;
+        return '<div class="row">' +
+          '<div class="nm">' + esc(k) +
+            (m.masked ? '<span class="pill">마스킹 ' + n(m.masked) + '</span>' : '') +
+            (m.sent !== m.issued ? '<small>발송 ' + n(m.sent) + '건</small>' : '') + '</div>' +
+          '<div class="mini"><span class="mtrack gray"><i style="width:' + w(m.sent, maxSent) + '"></i></span>' +
+            '<span class="mv dim">' + n(m.issued) + '</span></div>' +
+          '<div class="mini"><span class="mtrack"><i style="width:' + w(u, maxUse) + '"></i></span>' +
+            '<span class="mv">' + pct(m.used, m.issued) + '</span></div>' +
+          '<div class="money">' + won(m.revenue) +
+            '<small>' + n(m.used) + '건 사용</small></div>' +
+          '<div class="roas' + (m.revenue?'':' none') + '">' + roasTxt(m.revenue, c) + '</div>' +
+        '</div>';
+      }).join('')
+    : '<div class="empty">데이터가 없습니다</div>';
+
+  // ── 액세서리
+  var ik = Object.keys(a.items).sort(function(x,y){ return a.items[y].revenue - a.items[x].revenue; });
+  var maxRev = ik.length ? a.items[ik[0]].revenue : 0;
+  document.getElementById('items').innerHTML = ik.length
+    ? headRow('액세서리','구매한 모델','매출 비중 (최대값 기준)','매출','건수') + ik.map(function(k){
+        var v = a.items[k];
+        var md = Object.keys(v.models||{}).sort(function(x,y){ return v.models[y]-v.models[x]; })
+          .map(function(x){ return esc(x); }).join(', ');
+        return '<div class="row">' +
+          '<div class="nm">' + esc(k) + '<small>건당 ' + won(v.n ? v.revenue/v.n : 0) + '</small></div>' +
+          '<div class="mv dim" style="text-align:left;min-width:0">' + (md || '–') + '</div>' +
+          '<div class="mini"><span class="mtrack"><i style="width:' + w(v.revenue, maxRev) + '"></i></span></div>' +
+          '<div class="money">' + won(v.revenue) + '<small>할인 ' + won(v.discount) + '</small></div>' +
+          '<div class="roas" style="color:var(--ink)">' + n(v.n) + '건</div>' +
+        '</div>';
+      }).join('')
+    : '<div class="empty">아직 사용된 쿠폰이 없습니다</div>';
+
+  // ── 회차별 추이
+  var all = DATA.rounds || [];
+  document.getElementById('roundcard').hidden = all.length < 2;
+  var mu = 0;
+  all.forEach(function(r){ var u=r.issued?r.used/r.issued:0; if(u>mu) mu=u; });
+  document.getElementById('rounds').innerHTML =
+    headRow('회차 · 발급일/발송일','발송','쿠폰 사용률' + (mu ? ' (최고 ' + (Math.round(mu*1000)/10) + '% 기준)' : ''),
+            '쿠폰 매출','ROAS') + all.map(function(r){
+      var c = r.sent*unit + (r.discount||0);
+      var u = r.issued ? r.used/r.issued : 0;
+      return '<div class="row' + (PICK === String(r.round) ? ' rsel' : '') + '">' +
+        '<div class="nm">' + esc(r.round) + '회차<small>' + esc(dates(r)) + '</small></div>' +
+        '<div class="mv dim" style="text-align:left">' + n(r.sent) + '건</div>' +
+        '<div class="mini"><span class="mtrack"><i style="width:' + w(u, mu) + '"></i></span>' +
+          '<span class="mv">' + pct(r.used, r.issued) + '</span></div>' +
+        '<div class="money">' + won(r.revenue) + '</div>' +
+        '<div class="roas' + (r.revenue?'':' none') + '">' + roasTxt(r.revenue, c) + '</div>' +
+      '</div>';
+    }).join('');
+}
+
+function kpi(k, v, u, s, hero){
+  return '<div class="kpi' + (hero?' hero':'') + '"><div class="k">' + k + '</div>' +
+    '<div class="v">' + v + (u ? '<span class="u">' + u + '</span>' : '') + '</div>' +
+    '<div class="s">' + s + '</div></div>';
+}
+function fstep(label, date, val, base, rate, soft){
+  return '<div class="fstep"><span class="fl">' + label +
+      (date ? '<small>' + esc(date) + '</small>' : '') + '</span>' +
+    '<span class="ftrack' + (soft?' soft':'') + '"><i style="width:' + w(val, base) + '"></i></span>' +
+    '<span class="fn">' + n(val) + '</span>' +
+    '<span class="fp' + (rate==='–'?' zero':'') + '">' + rate + '</span></div>';
+}
+function headRow(){
+  return '<div class="row head">' +
+    Array.prototype.map.call(arguments, function(x){ return '<span>' + x + '</span>'; }).join('') +
+    '</div>';
+}
+
+function fail(msg){
+  document.getElementById('stamp').textContent = '불러오기 실패';
+  var e = document.getElementById('err'); e.hidden = false; e.textContent = msg;
+}
+function load(){
+  var b = document.getElementById('reload');
+  b.disabled = true; b.textContent = '불러오는 중…';
+  document.getElementById('stamp').textContent = '불러오는 중… (처음 열 때 최대 1분)';
+  fetchStats(
+    function(d){ b.disabled = false; b.textContent = '새로고침'; render(d); },
+    function(m){ b.disabled = false; b.textContent = '새로고침'; fail(m); }
+  );
+}
+document.getElementById('round').addEventListener('change', function(){
+  PICK = this.value; draw();
+});
+document.getElementById('reload').addEventListener('click', load);
+load();
+setInterval(load, 30 * 60 * 1000);
+</script>
+</body>
+</html>
