@@ -406,10 +406,8 @@ function draw(){
       headRow('주차','사용','사용 건수 (최대값 기준)','쿠폰 매출','전주대비') +
       wk.map(function(x, i){
         var p = i ? wk[i-1] : null;
-        var top = Object.keys(x.items).sort(function(m,q){ return x.items[q].n - x.items[m].n; })[0];
         return '<div class="row">' +
-          '<div class="nm">' + esc(wlabel(x)) +
-            '<small>' + (top ? esc(top) + ' ' + n(x.items[top].n) + '건' : '–') + '</small></div>' +
+          '<div class="nm">' + esc(wlabel(x)) + '</div>' +
           '<div class="mv dim" style="text-align:left">' + n(x.n) + '건</div>' +
           '<div class="mini"><span class="mtrack"><i style="width:' + w(x.n, maxN) + '"></i></span></div>' +
           '<div class="money">' + won(x.revenue) + '<small>할인 ' + won(x.discount) + '</small></div>' +
