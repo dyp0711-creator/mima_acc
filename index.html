@@ -102,6 +102,28 @@
     letter-spacing:-.015em;color:var(--pos)}
   .roas.none{color:var(--ink3);font-weight:400}
 
+  /* ── 증감 */
+  .dl{font-size:13.5px;font-variant-numeric:tabular-nums;letter-spacing:-.01em;font-weight:600}
+  .dl em{font-style:normal;font-weight:400;font-size:12px;opacity:.75}
+  .dl.up{color:var(--pos)}
+  .dl.down{color:var(--neg,#d93025)}
+  .dl.flat{color:var(--ink3);font-weight:400}
+
+  /* ── 품목 x 주차 매트릭스 */
+  .sub2{font-size:14px;font-weight:600;letter-spacing:-.015em;margin:26px 0 3px}
+  .mtxwrap{overflow-x:auto;margin:0 -4px;padding:0 4px}
+  .mtx{border-collapse:collapse;width:100%;font-size:13.5px;
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .mtx th,.mtx td{padding:10px 12px;text-align:right;white-space:nowrap;
+    border-bottom:1px solid var(--line)}
+  .mtx thead th{font-size:11.5px;color:var(--ink3);font-weight:500;letter-spacing:.01em}
+  .mtx th:first-child,.mtx td:first-child{text-align:left;position:sticky;left:0;
+    background:var(--card);font-weight:600;min-width:120px}
+  .mtx tbody tr:last-child td{border-bottom:0}
+  .mtx tfoot td{border-top:1px solid var(--line);border-bottom:0;font-weight:600;padding-top:12px}
+  .mtx td.zero{color:var(--ink3)}
+  .mtx td.last{font-weight:600}
+
   /* ── 회차 선택 */
   .hctl{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
   .sel{font:inherit;font-size:14px;font-weight:500;color:var(--ink);background:var(--card);
@@ -167,6 +189,15 @@
     <h2>쿠폰으로 팔린 액세서리</h2>
     <p class="sub" data-scope="쿠폰 발급내역의 상품명 기준"></p>
     <div class="rows" id="items"></div>
+  </div>
+
+  <div class="card" id="weekcard" hidden>
+    <h2>주차별 효율</h2>
+    <p class="sub" id="weeksub"></p>
+    <div class="rows" id="weeks"></div>
+    <h3 class="sub2">품목별 · 주차별 사용</h3>
+    <p class="sub" style="margin-bottom:14px">쿠폰 사용 건수 기준 · 맨 오른쪽은 마지막 주의 전주대비</p>
+    <div class="mtxwrap"><table class="mtx" id="wmtx"></table></div>
   </div>
 
   <div class="card" id="roundcard">
@@ -364,6 +395,56 @@ function draw(){
       }).join('')
     : '<div class="empty">아직 사용된 쿠폰이 없습니다</div>';
 
+  // ── 주차별 효율
+  var wk = weekAgg(a.rounds);
+  document.getElementById('weekcard').hidden = !wk.length;
+  if (wk.length){
+    var maxN = wk.reduce(function(m,x){ return Math.max(m, x.n); }, 0);
+    document.getElementById('weeksub').textContent =
+      scope + ' · ' + wk.length + '개 주 · 사용 ' + n(a.used) + '건';
+    document.getElementById('weeks').innerHTML =
+      headRow('주차','사용','사용 건수 (최대값 기준)','쿠폰 매출','전주대비') +
+      wk.map(function(x, i){
+        var p = i ? wk[i-1] : null;
+        var top = Object.keys(x.items).sort(function(m,q){ return x.items[q].n - x.items[m].n; })[0];
+        return '<div class="row">' +
+          '<div class="nm">' + esc(wlabel(x)) +
+            '<small>' + (top ? esc(top) + ' ' + n(x.items[top].n) + '건' : '–') + '</small></div>' +
+          '<div class="mv dim" style="text-align:left">' + n(x.n) + '건</div>' +
+          '<div class="mini"><span class="mtrack"><i style="width:' + w(x.n, maxN) + '"></i></span></div>' +
+          '<div class="money">' + won(x.revenue) + '<small>할인 ' + won(x.discount) + '</small></div>' +
+          '<div style="text-align:right">' + delta(x.n, p ? p.n : null) + '</div>' +
+        '</div>';
+      }).join('');
+
+    // 품목 x 주차
+    var names = {}, tot = {};
+    wk.forEach(function(x){ Object.keys(x.items).forEach(function(k){
+      names[k] = 1; tot[k] = (tot[k]||0) + x.items[k].n; }); });
+    var ks = Object.keys(names).sort(function(x,y){ return tot[y] - tot[x]; });
+    var lastI = wk.length - 1;
+    var head = '<thead><tr><th>품목</th>' +
+      wk.map(function(x){ return '<th>' + esc(wlabel(x)) + '</th>'; }).join('') +
+      '<th>합계</th><th>전주대비</th></tr></thead>';
+    var body = '<tbody>' + ks.map(function(k){
+      var cur = wk[lastI].items[k] ? wk[lastI].items[k].n : 0;
+      var prv = lastI > 0 ? (wk[lastI-1].items[k] ? wk[lastI-1].items[k].n : 0) : null;
+      return '<tr><td>' + esc(k) + '</td>' +
+        wk.map(function(x, i){
+          var v = x.items[k] ? x.items[k].n : 0;
+          return '<td class="' + (v ? (i === lastI ? 'last' : '') : 'zero') + '">' +
+            (v ? n(v) : '·') + '</td>';
+        }).join('') +
+        '<td class="last">' + n(tot[k]) + '</td>' +
+        '<td>' + delta(cur, prv) + '</td></tr>';
+    }).join('') + '</tbody>';
+    var foot = '<tfoot><tr><td>합계</td>' +
+      wk.map(function(x){ return '<td>' + n(x.n) + '</td>'; }).join('') +
+      '<td>' + n(a.used) + '</td>' +
+      '<td>' + delta(wk[lastI].n, lastI > 0 ? wk[lastI-1].n : null) + '</td></tr></tfoot>';
+    document.getElementById('wmtx').innerHTML = head + body + foot;
+  }
+
   // ── 회차별 추이
   var all = DATA.rounds || [];
   document.getElementById('roundcard').hidden = all.length < 2;
@@ -383,6 +464,39 @@ function draw(){
         '<div class="roas' + (r.revenue?'':' none') + '">' + roasTxt(r.revenue, c) + '</div>' +
       '</div>';
     }).join('');
+}
+
+// ── 주차별 집계 (선택된 회차들의 weeks 를 하나로 합친다)
+function weekAgg(rounds){
+  var W = {};
+  (rounds||[]).forEach(function(r){
+    var w = r.weeks || {};
+    Object.keys(w).forEach(function(k){
+      var v = w[k] || {};
+      var t = W[k] || (W[k] = { week:k, to:v.to, n:0, revenue:0, discount:0, items:{} });
+      if (!t.to && v.to) t.to = v.to;
+      t.n += v.n||0; t.revenue += v.revenue||0; t.discount += v.discount||0;
+      Object.keys(v.items||{}).forEach(function(ik){
+        var s = v.items[ik] || {};
+        var d = t.items[ik] || (t.items[ik] = { n:0, revenue:0, discount:0 });
+        d.n += s.n||0; d.revenue += s.revenue||0; d.discount += s.discount||0;
+      });
+    });
+  });
+  return Object.keys(W).sort().map(function(k){ return W[k]; });
+}
+function wlabel(x){
+  return md(x.week) + (x.to ? '~' + md(x.to) : '');
+}
+// 전주대비 증감 — 건수 차이와 변화율을 같이 보여준다
+function delta(cur, prev){
+  if (prev === null || prev === undefined) return '<span class="dl flat">–</span>';
+  var d = (cur||0) - (prev||0);
+  if (!d) return '<span class="dl flat">0</span>';
+  var sign = d > 0 ? '+' : '−';
+  var p = prev ? Math.round(Math.abs(d) / prev * 100) : null;
+  return '<span class="dl ' + (d > 0 ? 'up' : 'down') + '">' + sign + n(Math.abs(d)) +
+    (p !== null ? ' <em>' + sign + p + '%</em>' : '') + '</span>';
 }
 
 function kpi(k, v, u, s, hero){
