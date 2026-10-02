@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<base target="_top">
+<title>미마 액세서리 쿠폰 CRM 효율 대시보드</title>
 <style>
   :root{
     color-scheme: light;
@@ -180,8 +180,7 @@
     </div>
     <div class="hctl">
       <select id="round" class="sel" aria-label="회차 선택"></select>
-      <button class="btn" id="run">① 데이터 취합</button>
-      <button class="btn ghost" id="reload">새로고침</button>
+      <button class="btn" id="reload">새로고침</button>
     </div>
   </header>
 
@@ -221,30 +220,9 @@
     <div class="rows" id="rounds"></div>
   </div>
 
-  <div class="card">
-    <h2>다음 발송대상</h2>
-    <p class="sub">쿠폰을 발급할 명단 · 마스킹 건은 발급 대상으로 지정할 수 없습니다</p>
-    <div class="tools">
-      <input type="search" id="q" placeholder="이름 · 아이디">
-      <select id="fmask">
-        <option value="">전체</option>
-        <option value="ok">발급 가능만</option>
-        <option value="mask">마스킹만</option>
-      </select>
-      <button class="btn ghost" id="copy">보이는 아이디 복사</button>
-    </div>
-    <div class="listwrap"><div class="rows" id="list"></div></div>
-    <p class="sub" id="listfoot" style="margin:14px 0 0"></p>
-  </div>
-
-  <p class="foot">[미마 CRM] 메뉴에서 ①·②·③을 실행하세요</p>
+  <p class="foot">구글시트를 실시간으로 읽습니다 · 개인정보는 포함되지 않습니다</p>
 </div>
 
-<dialog id="copybox">
-  <p style="margin:0 0 11px;font-size:14px">전체 선택해서 복사하세요.</p>
-  <textarea id="copytext" readonly></textarea>
-  <div style="text-align:right;margin-top:13px"><button class="btn ghost" id="copyclose">닫기</button></div>
-</dialog>
 
 <script>
 var DATA = null, PICK = '';
@@ -274,10 +252,28 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
 function cnt(v){ return (v && typeof v === 'object') ? (v.sent||0) : (v||0); }
 function w(a,b){ return (b ? Math.max(a/b*100, a>0?1.5:0) : 0) + '%'; }
 
+var API = 'https://script.google.com/macros/s/AKfycby_47yqyOhttA6vvQ2R74rFbA0mS1FixqMoZrwbzP_E71MPMTnYoTMz47-CQ_a-kDtt/exec';
+var seq = 0, TIMEOUT = 70000;
 function fetchStats(cb, onErr){
-  google.script.run.withSuccessHandler(cb)
-    .withFailureHandler(function(e){ onErr(e.message); })
-    .getDashboardData();
+  if (API.indexOf('http') !== 0){ onErr('API 주소가 설정되지 않았습니다.'); return; }
+  var url = API + (API.indexOf('?') < 0 ? '?' : '&') + 'api=1&t=' + Date.now();
+  var ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var killer = setTimeout(function(){ if (ac) ac.abort(); }, TIMEOUT);
+  fetch(url, ac ? {mode:'cors',credentials:'omit',signal:ac.signal} : {mode:'cors',credentials:'omit'})
+    .then(function(r){ return r.text(); })
+    .then(function(t){ clearTimeout(killer); cb(JSON.parse(t)); })
+    .catch(function(){ clearTimeout(killer); jsonp(cb, onErr); });
+}
+function jsonp(cb, onErr){
+  var name = '__mimaCb' + (++seq), s = document.createElement('script'), done = false;
+  var timer = setTimeout(function(){ if (done) return; done = true; cleanup();
+    onErr('응답이 없습니다. Apps Script 배포 권한을 확인해주세요.'); }, TIMEOUT);
+  function cleanup(){ clearTimeout(timer); try { delete window[name]; } catch(e){}
+    if (s.parentNode) s.parentNode.removeChild(s); }
+  window[name] = function(d){ if (done) return; done = true; cleanup(); cb(d); };
+  s.onerror = function(){ if (done) return; done = true; cleanup(); onErr('데이터를 불러오지 못했습니다.'); };
+  s.src = API + (API.indexOf('?') < 0 ? '?' : '&') + 'api=1&callback=' + name + '&t=' + Date.now();
+  document.body.appendChild(s);
 }
 
 // ── 선택된 회차(또는 전체)를 하나로 합친 값
@@ -486,7 +482,6 @@ function draw(){
       '</div>';
     }).join('');
 
-  drawList();
 }
 
 // ── 주차별 집계 (선택된 회차들의 weeks 를 하나로 합친다)
@@ -553,61 +548,12 @@ function load(){
     function(m){ b.disabled = false; b.textContent = '새로고침'; fail(m); }
   );
 }
-function visibleTargets(){
-  var q = document.getElementById('q').value.trim().toLowerCase();
-  var fk = document.getElementById('fmask').value;
-  return (DATA.targets || []).filter(function(t){
-    var m = String(t.id||'').indexOf('*') >= 0;
-    if (fk === 'ok' && m) return false;
-    if (fk === 'mask' && !m) return false;
-    if (q && (String(t.name||'') + ' ' + String(t.id||'')).toLowerCase().indexOf(q) < 0) return false;
-    return true;
-  });
-}
-function drawList(){
-  if (!DATA) return;
-  var rows = visibleTargets();
-  document.getElementById('list').innerHTML = rows.length
-    ? rows.map(function(t){
-        var m = String(t.id||'').indexOf('*') >= 0;
-        return '<div class="lrow"><span>' + esc(mlabel(t.model)) + '</span>' +
-          '<span>' + esc(t.name) + '</span>' +
-          '<span class="id">' + esc(t.id) + '</span>' +
-          '<span>' + (m ? '<span class="pill">마스킹</span>' : '') + '</span></div>';
-      }).join('')
-    : '<div class="empty">해당하는 대상이 없습니다</div>';
-  var ok = rows.filter(function(t){ return String(t.id||'').indexOf('*') < 0; }).length;
-  document.getElementById('listfoot').textContent =
-    n(rows.length) + '명 표시 · 발급 가능 ' + n(ok) + '명';
-}
-document.getElementById('q').addEventListener('input', drawList);
-document.getElementById('fmask').addEventListener('change', drawList);
-document.getElementById('copy').addEventListener('click', function(){
-  var text = visibleTargets().map(function(t){ return t.id; }).join('\n');
-  var box = document.getElementById('copybox'), b = this;
-  document.getElementById('copytext').value = text;
-  if (navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){
-      var old = b.textContent; b.textContent = '복사됨';
-      setTimeout(function(){ b.textContent = old; }, 1400);
-    }).catch(function(){ box.showModal(); });
-  } else box.showModal();
-});
-document.getElementById('copyclose').addEventListener('click', function(){
-  document.getElementById('copybox').close();
-});
-document.getElementById('run').addEventListener('click', function(){
-  var b = this; b.disabled = true; b.textContent = '취합 중…';
-  google.script.run
-    .withSuccessHandler(function(){ b.disabled = false; b.textContent = '① 데이터 취합'; load(); })
-    .withFailureHandler(function(e){ b.disabled = false; b.textContent = '① 데이터 취합'; alert(e.message); })
-    .runBuildFromWeb();
-});
 document.getElementById('round').addEventListener('change', function(){
   PICK = this.value; draw();
 });
 document.getElementById('reload').addEventListener('click', load);
 load();
+setInterval(load, 30 * 60 * 1000);
 </script>
 </body>
 </html>
