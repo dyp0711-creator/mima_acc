@@ -252,7 +252,13 @@ var DATA = null, PICK = '';
 // 화면에 보여줄 모델 이름 (여기만 고치면 됩니다. 같은 이름이 되면 한 줄로 합쳐집니다)
 var MODEL_LABEL = { '미로': '미로 플러스' };
 function mlabel(k){ return MODEL_LABEL[k] || k; }
-function md(d){ return String(d||'').replace(/^\d{4}[-.\/]/, '').replace(/[-.\/]/g, '/'); }
+function md(d){
+  var s = String(d||'').trim();
+  // 2026-09-02 / 2026.09.02 / 20260902 등 어떤 형식이든 26-09-02 로 통일
+  var m = s.match(/(\d{4})\D*(\d{1,2})\D*(\d{1,2})/);
+  if (m) return m[1].slice(2) + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
+  return s;
+}
 function dates(r){
   var a = r.date ? '발급 ' + md(r.date) : '';
   var b = r.crmDate && r.crmDate !== r.date ? ' · 발송 ' + md(r.crmDate) : '';
