@@ -234,7 +234,7 @@ function md(d){
   var s = String(d||'').trim();
   // 2026-09-02 / 2026.09.02 / 20260902 등 어떤 형식이든 26-09-02 로 통일
   var m = s.match(/(\d{4})\D*(\d{1,2})\D*(\d{1,2})/);
-  if (m) return m[1].slice(2) + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[3]).slice(-2);
+  if (m) return m[1].slice(2) + '.' + ('0'+m[2]).slice(-2) + '.' + ('0'+m[3]).slice(-2);
   return s;
 }
 function dates(r){
